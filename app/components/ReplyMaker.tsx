@@ -117,7 +117,7 @@ export default function ReplyMaker() {
             Create entries
           </button>
           <button
-            className="btn"
+            className="btn relative"
             onClick={async () => {
               await navigator.clipboard.writeText(defaultPrompt);
               setCopyStatus("Copied!");
@@ -125,10 +125,12 @@ export default function ReplyMaker() {
             }}
           >
             Copy prompt
+            {copyStatus && (
+              <span className="text-sm text-zinc-600 absolute -bottom-8 left-1/2 -translate-x-1/2">
+                {copyStatus}
+              </span>
+            )}
           </button>
-          {copyStatus && (
-            <span className="text-sm text-zinc-600">{copyStatus}</span>
-          )}
         </div>
 
         {parsedTweetUrls.length > 0 && (

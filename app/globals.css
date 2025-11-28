@@ -11,6 +11,10 @@ body {
   font-family: var(--font-inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial);
 }
 
+button {
+  width: 100%;
+}
+
 .btn {
   color: white;
   padding: 8px 12px;
@@ -19,8 +23,12 @@ body {
   background-color: black;
 }
 
+.btn:hover {
+  background-color: #333333;
+}
+
 .remove-btn {
-    cursor: pointer;
+  cursor: pointer;
   background-color: transparent;
   color: red;
 }
