@@ -25,9 +25,13 @@ function makeIntentUrl(tweetId: string, text: string) {
 export default function ReplyMaker() {
   const [entries, setEntries] = useState<TweetEntry[]>([]);
   const [bulkTweetUrls, setBulkTweetUrls] = useState("");
-  const [bulkRepliesText, setBulkRepliesText] = useState("");
+  const defaultPrompt =
+    "Generate 50 bullish comments about project growth and potential. One on each line. Do not add any remarks. Just the comments";
+  const [bulkRepliesText, setBulkRepliesText] = useState(defaultPrompt);
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [parsedTweetUrls, setParsedTweetUrls] = useState<string[]>([]);
   const [parsedReplies, setParsedReplies] = useState<string[]>([]);
+  const deficit = parsedTweetUrls.length - parsedReplies.length;
 
   function removeEntry(url: string) {
     setEntries((entries) => entries.filter((entry) => entry.url !== url));
@@ -41,15 +45,21 @@ export default function ReplyMaker() {
     window.open(intentUrl, "_blank", "noopener,noreferrer");
   }
 
-  function parseBulk() {
+  function parseUrls() {
     const regex =
       /https?:\/\/(twitter\.com|x\.com)\/[A-Za-z0-9_]+\/status\/\d+/g;
 
     const urls = bulkTweetUrls.match(regex);
-    const replies = bulkRepliesText.split(/\r?\n/).map((line) => line.trim());
 
     setParsedTweetUrls(urls || []);
-    setParsedReplies(replies);
+  }
+
+  function parseReplies() {
+    const replies = bulkRepliesText
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line != "");
+    setParsedReplies((prevReplies) => [...prevReplies, ...replies]);
   }
 
   function createEntries() {
@@ -74,7 +84,7 @@ export default function ReplyMaker() {
       <section className="flex flex-col gap-4 mb-6 border-t pt-6">
         <div className="w-full flex flex-col gap-4">
           <div>
-            <label className="block">Tweet URLs (one per line)</label>
+            <label className="block">Tweet URLs</label>
             <textarea
               value={bulkTweetUrls}
               onChange={(e) => setBulkTweetUrls(e.target.value)}
@@ -96,42 +106,49 @@ export default function ReplyMaker() {
             />
           </div>
         </div>
-        <div className="flex flex-col md:flex-row gap-2">
-          <button onClick={parseBulk} className="bg-emerald-600">
-            Parse posts
+        <div className="flex flex-col md:flex-row gap-2 items-center">
+          <button className="btn" onClick={parseUrls}>
+            Parse urls
           </button>
-          <button
-            onClick={() => {
-              setParsedTweetUrls([]);
-              setParsedReplies([]);
-            }}
-            className="bg-amber-600"
-          >
-            Reset mapping
+          <button className="btn" onClick={parseReplies}>
+            Parse replies
           </button>
-          <button onClick={createEntries} className="bg-blue-600">
+          <button className="btn" onClick={createEntries}>
             Create entries
           </button>
+          <button
+            className="btn"
+            onClick={async () => {
+              await navigator.clipboard.writeText(defaultPrompt);
+              setCopyStatus("Copied!");
+              setTimeout(() => setCopyStatus(null), 2000);
+            }}
+          >
+            Copy prompt
+          </button>
+          {copyStatus && (
+            <span className="text-sm text-zinc-600">{copyStatus}</span>
+          )}
         </div>
 
         {parsedTweetUrls.length > 0 && (
           <div className="w-full">
-            <div>
-              <div className="mb-2">Tweets</div>
-              <div className="flex flex-col gap-4">
-                {parsedTweetUrls.map((url) => (
-                  <div key={url} className="rounded-lg border p-3 bg-white">
-                    <p>{url}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <p>{parsedTweetUrls.length} urls parsed</p>
+          </div>
+        )}
+
+        {parsedReplies.length > 0 && (
+          <div className="w-full">
+            <p>
+              {parsedReplies.length} replies parsed.{" "}
+              {deficit > 0 && `${deficit} more replies needed`}
+            </p>
           </div>
         )}
       </section>
 
       <section>
-        <h2 className="mb-2">Generated posts</h2>
+        <h2 className="mb-2">Generated entries</h2>
         {entries.length === 0 && (
           <p className="text-sm">
             No tweets added yet — add a tweet and some replies to generate
@@ -140,20 +157,19 @@ export default function ReplyMaker() {
         )}
 
         <div className="flex flex-col gap-4 mt-4">
-          {entries.map((entry) => {
+          {entries.map((entry, index) => {
             const reply = entry.reply;
             return (
-              <div key={entry.url} className="rounded border p-3">
+              <div key={entry.url + index} className="rounded border p-3">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <div className="text-sm break-all">
-                      <strong>Tweet:</strong> {entry.url}
-                    </div>
+                    <div className="text-sm">Tweet: {entry.url}</div>
+                    <div className="text-sm">Reply: {entry.reply}</div>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => removeEntry(entry.url)}
-                      className="text-sm text-red-600"
+                      className="remove-btn"
                     >
                       Remove
                     </button>
@@ -162,14 +178,14 @@ export default function ReplyMaker() {
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   {!reply && <div className="text-sm">No reply provided.</div>}
-                  <button
-                    onClick={() => openReply(entry.url, reply)}
-                    className="border bg-black"
-                    title={reply}
-                    disabled={reply == ""}
-                  >
-                    Reply
-                  </button>
+                  {reply && (
+                    <button
+                      className="btn"
+                      onClick={() => openReply(entry.url, reply)}
+                    >
+                      Reply
+                    </button>
+                  )}
                 </div>
               </div>
             );
